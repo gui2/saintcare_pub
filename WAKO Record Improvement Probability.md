@@ -1,7 +1,7 @@
 <p><strong>DOCUMENT UNDER EDITION</strong></p>
 <h1 id="wako-record-improvement-probability">WAKO Record Improvement Probability</h1>
 <h2 id="intro">Intro</h2>
-<p>The WAKO city dataset is composed of 6497 electronic medical records (EMR). A record is a pair \((a,c)\), where \(a\) is a health assessment (<a href="https://www.evernote.com/shard/s25/nl/2147483647/fd37d473-bea9-41d5-92ec-927ab1f6b6b4/">assessment variables</a>) and \(c\) is a care plan. The assessment is a set of health variables measured by experts and doctors and the care plan is a sequence of health services \(s_{q}\).<br>
+<p>The WAKO city dataset is composed of 6497 electronic medical records (EMR). A record is a pair aaaa\((a,c)\), where \(a\) is a health assessment (<a href="https://www.evernote.com/shard/s25/nl/2147483647/fd37d473-bea9-41d5-92ec-927ab1f6b6b4/">assessment variables</a>) and \(c\) is a care plan. The assessment is a set of health variables measured by experts and doctors and the care plan is a sequence of health services \(s_{q}\).<br>
 A record is also associated to a care level \(CL \in \{12,13,21,22,23,24,25\}\) and to an improvement label \(IL \in \{improve, maintain, decline\}\).</p>
 <h2 id="task">Task</h2>
 <p>We aim at learning a model to predict the improvement/decline of a new record. We learn the joint latent representation of care plans and health assessment variables and from this representation we infer the improvement/decline health outcome.</p>
@@ -24,7 +24,6 @@ A record is also associated to a care level \(CL \in \{12,13,21,22,23,24,25\}\) 
 \[x_r^i = f_a W^i f_c^T\]</p>
 <h2 id="experiments">Experiments</h2>
 <p>We aim at predicting the improvement label of a care plan implementation. We set up the task as a binary classification problem where we build a single algorithm to handle all care levels at once. We gathered the records corresponding to \(improve\) and \(decline\) labels.</p>
-<p>We defined the models \(g\) and \(h\), both with the architecture defined <a href="#method">above</a>. The only difference between \(g\) and \(h\) relies in the input data. Model \(g\) takes as input all the health variables of assessment \(a\) while \(h\) takes only the assessment variables measured by an expert.</p>
 <p>For easing the understanding of sections below, we describe the experiment making reference to both models structure with the term <em>model</em>.</p>
 <h3 id="input">Input</h3>
 <p>The model input is the concatenation of \(a\) and \(c\). We defined an assessment as<br>
@@ -46,7 +45,8 @@ where \(\oplus\) is the concatenation operator and the subparts are:</p>
 <p>Each record \((a,c)\) is associated with an improvement label \(IL\), where \(a\) is a vector of the assessment variables \(&lt;a_{1},...,a_{769}&gt;\),  \(c\) is a set of services.</p>
 <p>In our dataset, there are 36 pairs that shares the values of expert variables \(a_{1}\dots a_{79}\). All these records (in total 72) were removed from the set before constructing the dataset.</p>
 <h4 id="experiments-1">Experiments</h4>
-<p>We performeed two experiments, where we split the dataset in two sets:</p>
+<p>We performeed two experiments, \(g\) and \(h\) are the models$ are different model, architecture are variations of the model architecture defined in <a href="#method">Method</a>. The difference between \(g\) and \(h\) relies in the input data. The model \(g\) takes all health variables in an assessment as input. Model \(h\) takes only the assessment variables measured by an expert.</p>
+<p>We split the dataset in two sets:</p>
 <ol>
 <li>\(D_{nursing\_care}\): records with \(CL \in \{21,22,23,24,25\}\)</li>
 <li>\(D_{linchpin\_support}\): records with \(CL \in \{12,13\}\)</li>
@@ -74,13 +74,15 @@ where \(\oplus\) is the concatenation operator and the subparts are:</p>
 </tbody>
 </table>
 <p><em>Table 1</em>: information and results obtained for each dataset.</p>
-<h4 id="data-balancing">Data balancing</h4>
-<p>Given that our experiment’s data appears unbalanced, we reduce the model bias sub-sampling. We <strong>down-sampled</strong> the decline examples to match the number of improve examples.</p>
 <p>The class <strong>RecordImprovementProbability</strong>, provides methods for training and inferring these models. This class is used by the notebook <em>run.ipynb</em>, where we train and evaluate this architecture using the data of Wako city.</p>
 <h4 id="evaluation">Evaluation</h4>
-<p>We measure the Accuracy of our method at classifying the improvement or decline of an (assessment, careplan) input pair.<br>
-In Table 2, we show the training data and accuracy evaluation of the models for the two experiments $D_{nursing_care} and \(D_{linchpin\_support}\). We have trained and evaluated 10 folds. Each fold was trained during 300 epochs. For cross-validation, we held out a balanced 50/50% subset of Positive and Negative examples where both contain a balanced number of examples.</p>
-<p>We construct the validation \((VAL)\) set by extracting 20% of examples from \(POS\) and \(NEG\).  Because \(POS\)  and \(NEG\) are balanced, \(VAL\) is balanced. With such a balanced \(VAL\) set, the random chance of the model’s Accuracy in the validation set is 0.5.</p>
+<p>We measure the Accuracy of our method at classifying the improvement or decline of an (assessment, careplan) input pair. For each experiment we perform cross validation with 10 folds. Each fold was trained during 300 epochs.</p>
+<h5 id="data-balancing">Data balancing</h5>
+<p>Given that our experiment’s data appears unbalanced (see Table 1), at each fold we reduce the model bias sub-sampling. We <strong>down-sampled</strong> the decline examples to match the number of improve examples, fininshing with a 50/50% split.</p>
+<h5 id="trainvalidation-sets">Train/Validation sets</h5>
+<p>We construct the validation \((VAL)\) set by extracting 20% of examples from the balanced sets. For validation, the random chance of the model’s Accuracy is 0.5.</p>
+<h5 id="results">Results</h5>
+<p>In Table 2, we show the number of training/validation examples at each fold and the Mean Max Accuracy the experiments $D_{nursing_care} and \(D_{linchpin\_support}\).</p>
 <table>
 <thead>
 <tr>
@@ -88,8 +90,8 @@ In Table 2, we show the training data and accuracy evaluation of the models for 
 <th>Folds</th>
 <th>Training examples</th>
 <th>Validation examples</th>
-<th>\(g\) accuracy <br> <em>Mean (Std)</em></th>
-<th>\(h\) accuracy <br> <em>Mean (Std)</em></th>
+<th>\(g\) Mean Max Accuracy (Std)</th>
+<th>\(h\) Mean Max Accuracy (Std)</th>
 </tr>
 </thead>
 <tbody>
@@ -112,13 +114,12 @@ In Table 2, we show the training data and accuracy evaluation of the models for 
 </tbody>
 </table>
 <p><em>Table 2</em>: information and results obtained for each dataset.</p>
-<h4 id="results">Results</h4>
-<p>![Alt text](./Screen Shot 2017-04-01 at 18.51.04.png)<br>
-<em>Figure 1</em>: training curves of 10 folds of model \(g\) trained with \(D_{nursing\_care}\)</p>
-<p>![Alt text](./Screen Shot 2017-04-01 at 18.54.16.png)<br>
-<em>Figure 2</em>: confusion matrix of 1st fold done of model \(g\) trained with \(D_{nursing\_care}\).<br>
+<p>In <em>Figure 1</em> we show the confusion matrix of evaluating \(g\) on \(D_{nursing\_care}\) for a single fold.<br>
+<img src="https://i.imgur.com/DqjFXX7.png" alt="Confusion matrix in a single fold"><br>
+![Alt text](./Screen Shot 2017-04-01 at 18.54.16.png)</p>
+<p><em>Figure 2</em>: confusion matrix of 1st fold done of model \(g\) trained with \(D_{nursing\_care}\).<br>
 Available at: <a href="https://plot.ly/~guido.cs.stanford.edu/5350/care-levels-21-22-23-24-25-fold-9/">https://plot.ly/~guido.cs.stanford.edu/5350/care-levels-21-22-23-24-25-fold-9/</a></p>
-<h4 id="trained-model-paths-in-our-server">Trained model paths in our server</h4>
+<h4 id="paths-to-the-models-binary-files-in-our-server">Paths to the models’ binary files in our server</h4>
 <p>Folds where done in our two GPU clusters: panda2 and panda3.<br>
 Folds of model \(g\) can be found in panda2 at <em>/workspace/data/ai_core/experiments_results/WAKO_RecordImprovementProbability/v0/*</em><br>
 Folds of model \(h\) can be found in panda3 at <em>/workspace/data/ai_core/experiments_results/WAKO_RecordImprovementProbability/v1/*</em></p>
