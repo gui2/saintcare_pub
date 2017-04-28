@@ -4,7 +4,7 @@
 <p>The WAKO city dataset is composed of 6497 electronic medical records (EMR). A record is a pair \((a,c)\), where \(a\) is a health assessment (<a href="https://www.evernote.com/shard/s25/nl/2147483647/fd37d473-bea9-41d5-92ec-927ab1f6b6b4/">assessment variables</a>) and \(c\) is a care plan. The assessment is a set of health variables measured by experts and doctors and the care plan is a sequence of health services \(s_{q}\).<br>
 A record is also associated to a care level \(CL \in \{12,13,21,22,23,24,25\}\) and to an improvement label \(IL \in \{improve, maintain, decline\}\).</p>
 <h2 id="task">Task</h2>
-<p>Building a model capable of predicting the improvement label of a new given record by learning the joint latent representation of care plans and health assessment variables.</p>
+<p>We aim at learning a model to predict the improvement/decline of a new record. We learn the joint latent representation of care plans and health assessment variables and from this representation we infer the improvement/decline health outcome.</p>
 <h2 id="how">How</h2>
 <p>We learn a feed forward neural network which takes vectorial inputs \(a\) (assessment) and \(c\) (care plan), sampled from a dictionary \(D\), and produces a binary classification output between the improvement labels \(improve\) and \(decline\). Records with \(IL = maintain\) are not considered for this experiment.</p>
 <h2 id="preprocessing">Preprocessing</h2>
