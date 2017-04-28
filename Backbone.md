@@ -1,5 +1,5 @@
-<h3 id="backbone-architecture">Backbone architecture blablabla</h3>
-<p>The blablabla back-end <a href="https://github.com/blusa/ai-production">ai-production</a> is written following a <strong>MVT</strong> programming paradigm in the majority of the code (except few AJAX calls). Since Django allows to create and manage templates itself, we will contemplate *.html files as part of the backend. We will then refer as front-end javascript/jQuery code only.</p>
+<h3 id="backbone-architecture">Backbone architecture</h3>
+<p>The back-end <a href="https://github.com/blusa/ai-production">ai-production</a> is written following a <strong>MVT</strong> programming paradigm in the majority of the code (except few AJAX calls). Since Django allows to create and manage templates itself, we will contemplate *.html files as part of the backend. We will then refer as front-end javascript/jQuery code only.</p>
 <p>The source code is based on <a href="http://pinaxproject.com/">pinax boilerplate backbone</a>, so we have certain features being handled by default:</p>
 <ul>
 <li>Account management turned on</li>
