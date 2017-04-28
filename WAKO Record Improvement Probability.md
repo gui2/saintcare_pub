@@ -120,9 +120,9 @@ where \(\oplus\) is the concatenation operator and the subparts are:</p>
 <p><em>Figure 2</em>: confusion matrix of 1st fold done of model \(g\) trained with \(D_{nursing\_care}\).<br>
 Available at: <a href="https://plot.ly/~guido.cs.stanford.edu/5350/care-levels-21-22-23-24-25-fold-9/">https://plot.ly/~guido.cs.stanford.edu/5350/care-levels-21-22-23-24-25-fold-9/</a></p>
 <h4 id="paths-to-the-models-binary-files-in-our-server">Paths to the models’ binary files in our server</h4>
-<p>Folds where done in our two GPU clusters: panda2 and panda3.<br>
-Folds of model \(g\) can be found in panda2 at <em>/workspace/data/ai_core/experiments_results/WAKO_RecordImprovementProbability/v0/*</em><br>
-Folds of model \(h\) can be found in panda3 at <em>/workspace/data/ai_core/experiments_results/WAKO_RecordImprovementProbability/v1/*</em></p>
+<p>The folds of \(g\) can be found in panda2 at: <br> /workspace/data/ai<br>
+<em>core/experiments_results/WAKO_RecordImprovementProbability/v0/*</em><br>
+The folds of \(h\) can be found in panda3 at:<br> /workspace/data/ai_core/experiments_results/WAKO_RecordImprovementProbability/v1/*</p>
 <h4 id="production-usage">Production Usage</h4>
 <p>Model \(g\) is used in production for estimating the record’s improvement and decline probability of each of the care plans suggested (\(c_{top_1}\), \(c_{top_2}\) and \(c_{fusion}\)) combined with the record’s assessment.<br>
 For production, we trained 10 \(g\) models using different balanced subsets of \(D_{nursing\_care}\) and 10 others using different balanced subsets of \(D_{linchpin\_support}\).<br>
