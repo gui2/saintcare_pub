@@ -5,18 +5,29 @@
 A record is also associated to a care level \(CL \in \{12,13,21,22,23,24,25\}\) and to an improvement label \(IL \in \{improve, maintain, decline\}\).</p>
 <h2 id="task">Task</h2>
 <p>We aim at learning a model to predict the improvement/decline of a new record. We learn the joint latent representation of care plans and health assessment variables and from this representation we infer the improvement/decline health outcome.</p>
-<h2 id="model">Model</h2>
-<p>Our model is a forward neural network which takes vectorial inputs \(a\) (assessment) and \(a\) (care plan), sampled from a dictionary \(D\), and produces a binary classification output, e.i. \(improve\) or \(decline\). We don’t use \(maintain\) labeled records.</p>
 <h2 id="preprocessing">Preprocessing</h2>
 <p>To reduce ambiguities, we categorized all variables and created a dictionary \(D\). Its vocabulary is composed of 2064 words, which correspond to the possible observation values appearing in assessments and care plans. For categorizing the data:</p>
 <ul>
 <li>We considered empty observations (lack of data) variable dependent. Thus, we assigned a token per variable to represents them.</li>
 <li>We considered the cross-modality of the numerical observations –the same observed value have different meaning across variables. To preserve meaning we assign a unique category variable observation.</li>
 </ul>
-<h2 id="method">Method</h2>
-<p>First, our model embeds the independent inputs in to a higher dimensional space. For doing, we learn two embedding functions \(l_a\),\(l_c\) for the inputs \(a\), \(c\).</p>
-<h3 id="embedding-layer">Embedding layer</h3>
-<p>An embedding function \(l\) maps each variable observation to a feature vector of higher dimensionality by a look up table operation for which the parameters are learnt. For each word observation \(s \in D\), an embedding function \(l(·,W)\) produces a feature vector \(d^k\), where \(W \in \mathbb{R}^{k \times |D|}\) is learnt, \(k\) is a hyper-parameter and \(|D|\) is the dictionary length.</p>
+<p>Our model is a forward neural network which takes vectorial inputs the concatenation \(i= a \oplus c\) where \(a\) represents an assessment and \(c\) a care plan, sampled from a dictionary \(D\). The model produces a binary classification output, e.i. \(improve\) or \(decline\). We don’t use \(maintain\) labeled records.</p>
+<h4 id="assessment-and-careplan-representations">Assessment and careplan representations</h4>
+<p>The assessment is a concatenation<br>
+\[a = a_{expert} \oplus a_{doctor} \oplus a_{diseases} \oplus c_{services}\]<br>
+where:</p>
+<ul>
+<li>\(a_{expert}\) contains a vector of 79 health variables provided by experts.</li>
+<li>\(a_{doctor}\) contains a vector of 94 health variables measured by an independent medical doctor.</li>
+<li>\(a_{diseases}\) contains a binary vector indicating the presence of certain diseases categorized by ICD10 standard. Per record, we can have up to 15 diseases. We have represented the information as a global vector \(a_{diseases}\) of 596 dimensions. Each dimension corresponds to a ICD10 disease of our dataset.  Each variable \(v_d \in a_{diseases}^{1,\dots,596}\) represents the presence or absence of the disease \(d\).</li>
+<li>\(c\) contains the care plan services represented as a binary vector  of 276 dimensions, where 276 are all possible services in our dataset. A service is acctivated \(c_{services}^{i}=1\) when appears in the training example.</li>
+</ul>
+<p>All values part of the input are categorized following the rules mentioned in section <a href="#preprocessing">Preprocessing</a>.</p>
+<h3 id="target">Target</h3>
+<p>The model target is a one-hot vector \(Y = &lt;decline, improve&gt;\), where \(Y = &lt;1,0&gt;\) indicates the record’s careplan declines patient’s care level.</p>
+<h3 id="embedding-layers">Embedding layers</h3>
+<p>First, our model embeds the independent inputs in to a higher dimensional space. For doing, we learn two embedding infunctions \(l_a\),\(l_c\) for the inputs \(a\), \(c\).<br>
+An embedding function \(l\) maps each variable observation to a feature vector of higher dimensionality by a look up table operation for which the parameters are learnt. For each word observation \(s \in D\), an embedding function \(l(·,W)\) produces a feature vector \(d^k\), where \(W \in \mathbb{R}^{k \times |D|}\) is learnt, \(k\) is a hyper-parameter and \(|D|\) is the dictionary length.</p>
 <h3 id="encoder-layer">Encoder layer</h3>
 <p>Let \(a' \in \mathbb{R}^{|a| \times k}\) and \(c' \in \mathbb{R}^{|c| \times k}\) be the output of the embedding layer of our model. For extracting the key information embedded in \(a'\) and \(c'\) we reduce the dimensionality by learning two affined transformations \(f_a: \mathbb{R}^{|a| \times k} \to \mathbb{R}^{100}\), \(f_c: \mathbb{R}^{|c| \times k} \to \mathbb{R}^{100}\) with ReLU activations for \(a'\), \(c'\) respectively.</p>
 <h3 id="joint-representation">Joint representation</h3>
@@ -25,22 +36,10 @@ A record is also associated to a care level \(CL \in \{12,13,21,22,23,24,25\}\) 
 <h2 id="experiments">Experiments</h2>
 <p>We aim at predicting the improvement label of a care plan implementation. We set up the task as a binary classification problem where we build a single algorithm to handle all care levels at once. We gathered the records corresponding to \(improve\) and \(decline\) labels.</p>
 <p>For easing the understanding of sections below, we describe the experiment making reference to both models structure with the term <em>model</em>.</p>
-<h3 id="input">Input</h3>
-<p>The model input is the concatenation of \(a\) and \(c\). We defined an assessment as<br>
-\[a = a_{expert} \oplus a_{doctor} \oplus a_{diseases}\]<br>
-where \(\oplus\) is the concatenation operator and the subparts are:</p>
-<ul>
-<li>\(a_{expert}\):  the vector of 79 health variables provided by experts.</li>
-<li>\(a_{doctor}\) the vector of 94 variables measured by an independent medical doctor.</li>
-<li>\(a_{diseases}\): This indicates the presence of certain diseases categorized by ICD10 standard. Per record, we can have up to 15 diseases. We have represented the information as a global vector \(a_{diseases}\) of 596 dimensions. Each dimension corresponds to a ICD10 disease of our dataset.  Each variable \(v_d \in a_{diseases}^{1,\dots,596}\) represents the presence or absence of the disease \(d\).</li>
-</ul>
-<p>We represent a care plan as a vector \(c_{services}\) of 276 dimensions. Each dimension corresponds to a health service of our dataset and indicate the presence or absence of this service in the care plan.</p>
-<p>All values part of the input are categorized following the rules mentioned in section <a href="#preprocessing">Preprocessing</a>.</p>
-<h3 id="target">Target</h3>
-<p>We represent the target as one-hot vector \(Y = &lt;y_{decline}, y_{improve}&gt;\) of dimension 2, where \(y_{decline}\) indicates the record’s careplan declines patient’s care level and \(y_{improve}\) indicates the record’s careplan improves patient’s care level. Note, that these two classes are mutually exclusive.</p>
 <h3 id="loss">Loss</h3>
 <p>We used as loss function the cross entropy:<br>
-\[Y_i * log(g(a_i))\]</p>
+\[Y_i * log(g(i))\]<br>
+where is the concatenation of assessment and careplan, e.i. \(i = a \oplus c\).</p>
 <h3 id="train--validation">Train / Validation</h3>
 <p>Each record \((a,c)\) is associated with an improvement label \(IL\), where \(a\) is a vector of the assessment variables \(&lt;a_{1},...,a_{769}&gt;\),  \(c\) is a set of services.</p>
 <p>In our dataset, there are 36 pairs that shares the values of expert variables \(a_{1}\dots a_{79}\). All these records (in total 72) were removed from the set before constructing the dataset.</p>
