@@ -26,24 +26,22 @@ where:</p>
 <h3 id="target">Target</h3>
 <p>The model target is a one-hot vector \(Y = &lt;decline, improve&gt;\), where \(Y = &lt;1,0&gt;\) indicates the record’s careplan declines patient’s care level.</p>
 <h3 id="embedding-layers">Embedding layers</h3>
-<p>First, our model embeds the independent inputs in to a higher dimensional space. For doing, we learn two embedding infunctions \(l_a\),\(l_c\) for the inputs \(a\), \(c\).<br>
-An embedding function \(l\) maps each variable observation to a feature vector of higher dimensionality by a look up table operation for which the parameters are learnt. For each word observation \(s \in D\), an embedding function \(l(·,W)\) produces a feature vector \(d^k\), where \(W \in \mathbb{R}^{k \times |D|}\) is learnt, \(k\) is a hyper-parameter and \(|D|\) is the dictionary length.</p>
+<p>Our model maps the assesment vector \(a\) and the careplan vector \(c\) into higher dimensional spaces by means of two embedding functions \(l_a\) and \(l_c\). An embedding function  \(l\) maps an input value \(s \in \mathbb{N}\) into a vector through a lookup table operation \(l(s, W) \in \mathbb{R}^k\). The lookup table \(W \in \mathbb{R}^{k}\times |D|\) is learnt, where \(|D|\) is the length of possible v catealues of \(s\) and \(k\) an hyperparameter. For an input vector such as our assessment \(a\), the embedding \(l_a(a,W_a) \in \mathbb{R}^{|a| \times k}\) fits a latent matrix \(W_a \in \mathbb{R}^{k \times |a|}\), and for the careplan vector representation \(c\), \(l_c(c,W_c) \in \mathbb{R}^{k \times |D|}\) we fit a matrix \(W_a \in \mathbb{R}^{k \times |D|}\).</p>
 <h3 id="encoder-layer">Encoder layer</h3>
-<p>Let \(a' \in \mathbb{R}^{|a| \times k}\) and \(c' \in \mathbb{R}^{|c| \times k}\) be the output of the embedding layer of our model. For extracting the key information embedded in \(a'\) and \(c'\) we reduce the dimensionality by learning two affined transformations \(f_a: \mathbb{R}^{|a| \times k} \to \mathbb{R}^{100}\), \(f_c: \mathbb{R}^{|c| \times k} \to \mathbb{R}^{100}\) with ReLU activations for \(a'\), \(c'\) respectively.</p>
+<p>We encode \(l_a\) and \(l_c\) into same dimensional vectors using affine transformations \(f_a: \mathbb{R}^{k \times |a|} \to \mathbb{R}^{100}\), \(f_c: \mathbb{R}^{k \times |c|} \to \mathbb{R}^{100}\). We apply a non linear (RELU) transformation to the output vector \(f_i\).</p>
 <h3 id="joint-representation">Joint representation</h3>
-<p>We guarantee that both assessment and care plan are used for inferring the patient’s health outcome. Otherwise, the model could learn to dismiss the information on the care plan and predicting outcomes using only the assessment information. Such a prediction would be wrong since it would be expressing that the patient can improve with “some” care plan instead of the specific one we are providing as input. The opposite situation is also valid. To generate such a guarantee, we fuse the vector representations corresponding to an assessment \(f_a(a') = x_A \in \mathbb{R}^d\) and a care plan \(f_c(c') = x_C \in \mathbb{R}^d\) into the joint feature vector \(x_r \in  \mathbb{R}^n\). To obtain the \(x_r\) we learn the parameters \(W \in \mathbb{R}^{d \times d}\) of a bilinear transformation:<br>
+<p>Our model guarantees that both assessment and care plan are used for inferring the patient’s health outcome. Otherwise, the model could learn to dismiss the information on the care plan and predicting outcomes using only the assessment information. Such a prediction would be wrong since it would be expressing that the patient can improve with “some” care plan instead of the specific one we are providing as input. The opposite situation is also valid. To generate such a guarantee, we fuse the vector representations corresponding to an assessment \(f_a(a') = x_A \in \mathbb{R}^d\) and a care plan \(f_c(c') = x_C \in \mathbb{R}^d\) into the joint feature vector \(x_r \in  \mathbb{R}^n\). To obtain the \(x_r\) we learn the parameters \(W \in \mathbb{R}^{d \times d}\) of a bilinear transformation:<br>
 \[x_r^i = f_a W^i f_c^T\]</p>
-<h2 id="experiments">Experiments</h2>
-<p>We aim at predicting the improvement label of a care plan implementation. We set up the task as a binary classification problem where we build a single algorithm to handle all care levels at once. We gathered the records corresponding to \(improve\) and \(decline\) labels.</p>
-<p>For easing the understanding of sections below, we describe the experiment making reference to both models structure with the term <em>model</em>.</p>
 <h3 id="loss">Loss</h3>
 <p>We used as loss function the cross entropy:<br>
 \[Y_i * log(g(i))\]<br>
 where is the concatenation of assessment and careplan, e.i. \(i = a \oplus c\).</p>
+<h2 id="experiments">Experiments</h2>
+<p>We aim at predicting the improvement label of a care plan implementation. We set up the task as a binary classification problem where we build a single algorithm to handle all care levels at once. We gathered the records corresponding to \(improve\) and \(decline\) labels.</p>
+<p>For easing the understanding of sections below, we describe the experiment making reference to both models structure with the term <em>model</em>.</p>
 <h3 id="train--validation">Train / Validation</h3>
 <p>Each record \((a,c)\) is associated with an improvement label \(IL\), where \(a\) is a vector of the assessment variables \(&lt;a_{1},...,a_{769}&gt;\),  \(c\) is a set of services.</p>
 <p>In our dataset, there are 36 pairs that shares the values of expert variables \(a_{1}\dots a_{79}\). All these records (in total 72) were removed from the set before constructing the dataset.</p>
-<h4 id="experiments-1">Experiments</h4>
 <p>We performeed two experiments, \(g\) and \(h\) are the models$ are different model, architecture are variations of the model architecture defined in <a href="#method">Method</a>. The difference between \(g\) and \(h\) relies in the input data. The model \(g\) takes all health variables in an assessment as input. Model \(h\) takes only the assessment variables measured by an expert.</p>
 <p>We split the dataset in two sets:</p>
 <ol>
@@ -73,7 +71,6 @@ where is the concatenation of assessment and careplan, e.i. \(i = a \oplus c\).<
 </tbody>
 </table>
 <p><em>Table 1</em>: information and results obtained for each dataset.</p>
-<p>The class <strong>RecordImprovementProbability</strong>, provides methods for training and inferring these models. This class is used by the notebook <em>run.ipynb</em>, where we train and evaluate this architecture using the data of Wako city.</p>
 <h4 id="evaluation">Evaluation</h4>
 <p>We measure the Accuracy of our method at classifying the improvement or decline of an (assessment, careplan) input pair. For each experiment we perform cross validation with 10 folds. Each fold was trained during 300 epochs.</p>
 <h5 id="data-balancing">Data balancing</h5>
@@ -131,6 +128,7 @@ Then, we pass each \(r_i\) through all the \(g\) models of the corresponding car
 <h3 id="implementation">Implementation</h3>
 <p>We use tensorflow with tflearn framework for defining, training and evaluating the model architecture. In our code, the model architecture takes as input the placeholder \(vars\) filled with a matrix of dim <em>d x 1045</em> for model \(g\) (<em>d x 355</em> for model \(h\)) where each row contains the variable values of an assessment \(a\) concatenated with the values of \(c_{services}\).<br>
 We defined the target placeholder \(Y_{ph}\) as a matrix of size <em>dx2</em>.</p>
+<p>The class <strong>RecordImprovementProbability</strong>, provides methods for training our models. This class is used by the notebook <em>run.ipynb</em>.</p>
 <h4 id="how-to-train-your-own-model">How to train your own model?</h4>
 <ol>
 <li>Open notebook /workspace/data/ai_core/WAKO_RecordImprovementProbability/vX/run.ipynb (X in [0,1])</li>
