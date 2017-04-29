@@ -1,19 +1,14 @@
 <p><strong>DOCUMENT UNDER EDITION</strong></p>
 <h1 id="wako-record-improvement-probability">WAKO Record Improvement Probability</h1>
 <h2 id="intro">Intro</h2>
-<p>The WAKO city dataset is composed of 6497 electronic medical records (EMR). A record is a pair aaaa\((a,c)\), where \(a\) is a health assessment (<a href="https://www.evernote.com/shard/s25/nl/2147483647/fd37d473-bea9-41d5-92ec-927ab1f6b6b4/">assessment variables</a>) and \(c\) is a care plan. The assessment is a set of health variables measured by experts and doctors and the care plan is a sequence of health services \(s_{q}\).<br>
+<p>The WAKO city dataset is composed of 6497 electronic medical records (EMR). A record is a pair \((a,c)\), where \(a\) is a health assessment (<a href="https://www.evernote.com/shard/s25/nl/2147483647/fd37d473-bea9-41d5-92ec-927ab1f6b6b4/">assessment variables</a>) and \(c\) is a care plan. The assessment is a set of health variables measured by experts and doctors and the care plan is a sequence of health services \(s_{q}\).<br>
 A record is also associated to a care level \(CL \in \{12,13,21,22,23,24,25\}\) and to an improvement label \(IL \in \{improve, maintain, decline\}\).</p>
 <h2 id="task">Task</h2>
 <p>We aim at learning a model to predict the improvement/decline of a new record. We learn the joint latent representation of care plans and health assessment variables and from this representation we infer the improvement/decline health outcome.</p>
-<h2 id="preprocessing">Preprocessing</h2>
-<p>To reduce ambiguities, we categorized all variables and created a dictionary \(D\). Its vocabulary is composed of 2064 words, which correspond to the possible observation values appearing in assessments and care plans. For categorizing the data:</p>
-<ul>
-<li>We considered empty observations (lack of data) variable dependent. Thus, we assigned a token per variable to represents them.</li>
-<li>We considered the cross-modality of the numerical observations –the same observed value have different meaning across variables. To preserve meaning we assign a unique category variable observation.</li>
-</ul>
-<p>Our model is a forward neural network which takes vectorial inputs the concatenation \(i= a \oplus c\) where \(a\) represents an assessment and \(c\) a care plan, sampled from a dictionary \(D\). The model produces a binary classification output, e.i. \(improve\) or \(decline\). We don’t use \(maintain\) labeled records.</p>
-<h4 id="assessment-and-careplan-representations">Assessment and careplan representations</h4>
-<p>The assessment is a concatenation<br>
+<h2 id="method">Method</h2>
+<p>We fit a deep neural network \(\phi: a,c \rightarrow {1,0}\) taking as input the careplan \(c\) and health assessment \(a\). The model produces a binary classification output, e.i. \(improve = 1\) or \(decline = 0\). We don’t use \(maintain\) records.</p>
+<h3 id="assessment-and-careplan-representations">Assessment and careplan representations</h3>
+<p>An assessment is a concatenation<br>
 \[a = a_{expert} \oplus a_{doctor} \oplus a_{diseases} \oplus c_{services}\]<br>
 where:</p>
 <ul>
@@ -23,19 +18,23 @@ where:</p>
 <li>\(c\) contains the care plan services represented as a binary vector  of 276 dimensions, where 276 are all possible services in our dataset. A service is acctivated \(c_{services}^{i}=1\) when appears in the training example.</li>
 </ul>
 <p>All values part of the input are categorized following the rules mentioned in section <a href="#preprocessing">Preprocessing</a>.</p>
-<h3 id="target">Target</h3>
+<h3 id="target-values">Target values</h3>
 <p>The model target is a one-hot vector \(Y = &lt;decline, improve&gt;\), where \(Y = &lt;1,0&gt;\) indicates the record’s careplan declines patient’s care level.</p>
 <h3 id="embedding-layers">Embedding layers</h3>
 <p>Our model maps the assesment vector \(a\) and the careplan vector \(c\) into higher dimensional spaces by means of two embedding functions \(l_a\) and \(l_c\). An embedding function  \(l\) maps an input value \(s \in \mathbb{N}\) into a vector through a lookup table operation \(l(s, W) \in \mathbb{R}^k\). The lookup table \(W \in \mathbb{R}^{k}\times |D|\) is learnt, where \(|D|\) is the length of possible v catealues of \(s\) and \(k\) an hyperparameter. For an input vector such as our assessment \(a\), the embedding \(l_a(a,W_a) \in \mathbb{R}^{|a| \times k}\) fits a latent matrix \(W_a \in \mathbb{R}^{k \times |a|}\), and for the careplan vector representation \(c\), \(l_c(c,W_c) \in \mathbb{R}^{k \times |D|}\) we fit a matrix \(W_a \in \mathbb{R}^{k \times |D|}\).</p>
 <h3 id="encoder-layer">Encoder layer</h3>
 <p>We encode \(l_a\) and \(l_c\) into same dimensional vectors using affine transformations \(f_a: \mathbb{R}^{k \times |a|} \to \mathbb{R}^{100}\), \(f_c: \mathbb{R}^{k \times |c|} \to \mathbb{R}^{100}\). We apply a non linear (RELU) transformation to the output vector \(f_i\).</p>
 <h3 id="joint-representation">Joint representation</h3>
-<p>Our model guarantees that both assessment and care plan are used for inferring the patient’s health outcome. Otherwise, the model could learn to dismiss the information on the care plan and predicting outcomes using only the assessment information. Such a prediction would be wrong since it would be expressing that the patient can improve with “some” care plan instead of the specific one we are providing as input. The opposite situation is also valid. To generate such a guarantee, we fuse the vector representations corresponding to an assessment \(f_a(a') = x_A \in \mathbb{R}^d\) and a care plan \(f_c(c') = x_C \in \mathbb{R}^d\) into the joint feature vector \(x_r \in  \mathbb{R}^n\). To obtain the \(x_r\) we learn the parameters \(W \in \mathbb{R}^{d \times d}\) of a bilinear transformation:<br>
-\[x_r^i = f_a W^i f_c^T\]</p>
-<h3 id="loss">Loss</h3>
-<p>We used as loss function the cross entropy:<br>
-\[Y_i * log(g(i))\]<br>
-where is the concatenation of assessment and careplan, e.i. \(i = a \oplus c\).</p>
+<p>Our model guarantees that both assessment and care plan are used for inferring the patient’s health outcome. Otherwise, the model could learn to dismiss the information on the care plan and predicting outcomes using only the assessment information. Such a prediction would be wrong since it would be expressing that the patient can improve with “some” care plan instead of the specific one we are providing as input. The opposite situation is also valid. To generate such a guarantee, we fuse the vector representations corresponding to an assessment \(f_a\) and a care plan \(f_c\) into a feature vector using a bilinear transformation, followed by an affine transform \(\theta\) to obtain the classification output.</p>
+<p>\[\phi(a,c) = \theta(f_a ~W ~f_c^T)\]</p>
+<p>We optimized the cross entropy loss function \(Y * log(\phi(a,c))\) using stochastic gradient descent.</p>
+<h3 id="preprocessing">Preprocessing</h3>
+<p>To reduce ambiguities, we categorized all variables and created a dictionary \(D\). Its vocabulary is composed of 2064 words, which correspond to the possible observation values appearing in assessments and care plans. For categorizing the data:</p>
+<ul>
+<li>We considered empty observations (lack of data) variable dependent. Thus, we assigned a token per variable to represents them.</li>
+<li>We considered the cross-modality of the numerical observations –the same observed value have different meaning across variables. To preserve meaning we assign a unique category variable observation.</li>
+<li></li>
+</ul>
 <h2 id="experiments">Experiments</h2>
 <p>We aim at predicting the improvement label of a care plan implementation. We set up the task as a binary classification problem where we build a single algorithm to handle all care levels at once. We gathered the records corresponding to \(improve\) and \(decline\) labels.</p>
 <p>For easing the understanding of sections below, we describe the experiment making reference to both models structure with the term <em>model</em>.</p>
@@ -116,9 +115,8 @@ where is the concatenation of assessment and careplan, e.i. \(i = a \oplus c\).<
 <p><em>Figure 2</em>: confusion matrix of 1st fold done of model \(g\) trained with \(D_{nursing\_care}\).<br>
 Available at: <a href="https://plot.ly/~guido.cs.stanford.edu/5350/care-levels-21-22-23-24-25-fold-9/">https://plot.ly/~guido.cs.stanford.edu/5350/care-levels-21-22-23-24-25-fold-9/</a></p>
 <h4 id="paths-to-the-models-binary-files-in-our-server">Paths to the models’ binary files in our server</h4>
-<p>The folds of \(g\) can be found in panda2 at: <br> /workspace/data/ai<br>
-<em>core/experiments_results/WAKO_RecordImprovementProbability/v0/*</em><br>
-The folds of \(h\) can be found in panda3 at:<br> /workspace/data/ai_core/experiments_results/WAKO_RecordImprovementProbability/v1/*</p>
+<p>The folds of \(g\) can be found in panda2 at: <br> <em>/workspace/projects/saintcare/src/ai_core/experiments_results/WAKO_RecordImprovementProbability/v0/*</em><br>
+The folds of \(h\) can be found in panda3 at:<br> <em>/workspace/projects/saintcare/src/ai_core/experiments_results/WAKO_RecordImprovementProbability/v1/*</em></p>
 <h4 id="production-usage">Production Usage</h4>
 <p>Model \(g\) is used in production for estimating the record’s improvement and decline probability of each of the care plans suggested (\(c_{top_1}\), \(c_{top_2}\) and \(c_{fusion}\)) combined with the record’s assessment.<br>
 For production, we trained 10 \(g\) models using different balanced subsets of \(D_{nursing\_care}\) and 10 others using different balanced subsets of \(D_{linchpin\_support}\).<br>
@@ -131,12 +129,12 @@ We defined the target placeholder \(Y_{ph}\) as a matrix of size <em>dx2</em>.</
 <p>The class <strong>RecordImprovementProbability</strong>, provides methods for training our models. This class is used by the notebook <em>run.ipynb</em>.</p>
 <h4 id="how-to-train-your-own-model">How to train your own model?</h4>
 <ol>
-<li>Open notebook /workspace/data/ai_core/WAKO_RecordImprovementProbability/vX/run.ipynb (X in [0,1])</li>
+<li>Open notebook <em>/workspace/projects/saintcare/src/WAKO_RecordImprovementProbability/vX/run.ipynb</em> (X in [0,1])</li>
 <li>Configure type of training to do (explained in the notebook).</li>
 <li>Save changes on notebook</li>
 <li>Go to terminal and run:</li>
 </ol>
-<pre class=" language-bash"><code class="prism  language-bash"><span class="token function">cd</span> /workspace/data/ai_core/WAKO_RecordImprovementProbability/v0
+<pre class=" language-bash"><code class="prism  language-bash"><span class="token function">cd</span> /workspace/projects/saintcare/src/ai_core/WAKO_RecordImprovementProbability/v0
 
 <span class="token comment" spellcheck="true">#generate .py</span>
 jupyer nbconvert --to python run.ipynb
@@ -146,8 +144,8 @@ python run.py
 </code></pre>
 <h5 id="source-code">Source Code</h5>
 <p>For model \(g\)<br>
-<em>Model estimator</em>: /workspace/data/ai_core/WAKO_RecordImprovementProbability/v0/estimator.py<br>
-<em>Training and evaluation</em>: /workspace/data/ai_core/WAKO_RecordImprovementProbability/v0/run.ipynb</p>
+<em>Model estimator</em>: <em>/workspace/projects/saintcare/src/ai_core/WAKO_RecordImprovementProbability/v0/estimator.py</em><br>
+<em>Training and evaluation</em>: <em>/workspace/projects/saintcare/src/ai_core/WAKO_RecordImprovementProbability/v0/run.ipynb</em></p>
 <p>For model \(h\):<br>
-<em>Model estimator</em>: /workspace/data/ai_core/WAKO_RecordImprovementProbability/v1/estimator.py<br>
-<em>Training and evaluation</em>: /workspace/data/ai_core/WAKO_RecordImprovementProbability/v1/run.ipynb</p>
+<em>Model estimator</em>: <em>/workspace/projects/saintcare/src/ai_core/WAKO_RecordImprovementProbability/v1/estimator.py</em><br>
+<em>Training and evaluation</em>: <em>/workspace/projects/saintcare/src/ai_core/WAKO_RecordImprovementProbability/v1/run.ipynb</em></p>
