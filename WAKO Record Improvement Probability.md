@@ -77,7 +77,7 @@ where:</p>
 <h5 id="trainvalidation-sets">Train/Validation sets</h5>
 <p>We construct the validation \((VAL)\) set by extracting 20% of examples from the balanced sets. For validation, the random chance of the model’s Accuracy is 0.5.</p>
 <h5 id="results">Results</h5>
-<p>In Table 2, we show the number of training/validation examples at each fold and the Mean Max Accuracy the experiments $D_{nursing_care} and \(D_{linchpin\_support}\).</p>
+<p>In Table 2, we show the number of training/validation examples at each fold and the Mean Max Accuracy the experiments \(D_{nursing\_care}\) and \(D_{linchpin\_support}\).</p>
 <table>
 <thead>
 <tr>
@@ -108,12 +108,12 @@ where:</p>
 </tr>
 </tbody>
 </table>
-<p><em>Table 2</em>: information and results obtained for each dataset.</p>
-<p>In <em>Figure 1</em> we show the confusion matrix of evaluating \(g\) on \(D_{nursing\_care}\) for a single fold.<br>
-<img src="https://i.imgur.com/DqjFXX7.png" alt="Confusion matrix in a single fold"><br>
-![Alt text](./Screen Shot 2017-04-01 at 18.54.16.png)</p>
-<p><em>Figure 2</em>: confusion matrix of 1st fold done of model \(g\) trained with \(D_{nursing\_care}\).<br>
-Available at: <a href="https://plot.ly/~guido.cs.stanford.edu/5350/care-levels-21-22-23-24-25-fold-9/">https://plot.ly/~guido.cs.stanford.edu/5350/care-levels-21-22-23-24-25-fold-9/</a></p>
+<p><em>Table 2</em>: Experiments result.</p>
+<div>
+    <a href="https://plot.ly/~guido.cs.stanford.edu/5350/?share_key=NZnIkte2jDYpAEgUYrRkym" target="_blank" title="confusion_matrix"><img src="https://plot.ly/~guido.cs.stanford.edu/5350.png?share_key=NZnIkte2jDYpAEgUYrRkym" alt="confusion_matrix" width="600"></a>
+    
+</div><p><strong>Figure 1</strong>. We show the confusion matrix of evaluating \(g\) on \(D_{nursing\_care}\) for a single fold.<br>
+source: <a href="https://plot.ly/~guido.cs.stanford.edu/5350/care-levels-21-22-23-24-25-fold-9/">https://plot.ly/~guido.cs.stanford.edu/5350/care-levels-21-22-23-24-25-fold-9/</a></p>
 <h4 id="paths-to-the-models-binary-files-in-our-server">Paths to the models’ binary files in our server</h4>
 <p>The folds of \(g\) can be found in panda2 at: <br> <em>/workspace/projects/saintcare/src/ai_core/experiments_results/WAKO_RecordImprovementProbability/v0/*</em><br>
 The folds of \(h\) can be found in panda3 at:<br> <em>/workspace/projects/saintcare/src/ai_core/experiments_results/WAKO_RecordImprovementProbability/v1/*</em></p>
