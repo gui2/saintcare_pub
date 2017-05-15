@@ -1,15 +1,17 @@
 <p><strong>DOCUMENT UNDER EDITION</strong></p>
 <h1 id="wako-record-improvement-probability">WAKO Record Improvement Probability</h1>
+<p>We have 3 models of Wako,<br>
+and 2 models of Saintcare. Each model is split into two.</p>
 <h2 id="intro">Intro</h2>
-<p>The WAKO city dataset is composed of 6497 electronic medical records (EMR). A record is a pair \((a,c)\), where \(a\) is a health assessment (<a href="https://www.evernote.com/shard/s25/nl/2147483647/fd37d473-bea9-41d5-92ec-927ab1f6b6b4/">assessment variables</a>) and \(c\) is a care plan. The assessment is a set of health variables measured by experts and doctors and the care plan is a sequence of health services \(s_{q}\).<br>
-A record is also associated to a care level \(CL \in \{12,13,21,22,23,24,25\}\) and to an improvement label \(IL \in \{improve, maintain, decline\}\).</p>
+<p>The Wako city dataset is composed of 6497 electronic medical records (EMR). A record is a pair \((a,c)\), where \(a\) is a health assessment (<a href="https://www.evernote.com/shard/s25/nl/2147483647/fd37d473-bea9-41d5-92ec-927ab1f6b6b4/">assessment variables</a>) and \(c\) is a care plan. The assessment is a set of health variables measured by experts and doctors and the care plan is a sequence of health services \(s_{q}\).<br>
+A record is also associated to a care level \(\{12,13,21,22,23,24,25\}\) and to an improvement label \(\{improve, maintain, decline\}\).</p>
 <h2 id="task">Task</h2>
 <p>We aim at learning a model to predict the improvement/decline of a new record. We learn the joint latent representation of care plans and health assessment variables and from this representation we infer the improvement/decline health outcome.</p>
 <h2 id="method">Method</h2>
-<p>We fit a deep neural network \(\phi: a,c \rightarrow {1,0}\) taking as input the careplan \(c\) and health assessment \(a\). The model produces a binary classification output, e.i. \(improve = 1\) or \(decline = 0\). We don’t use \(maintain\) records.</p>
-<h3 id="assessment-and-careplan-representations">Assessment and careplan representations</h3>
-<p>An assessment is a concatenation<br>
-\[a = a_{expert} \oplus a_{doctor} \oplus a_{diseases} \oplus c_{services}\]<br>
+<p>We fit a deep neural network \(\phi: a,c \rightarrow \hat{y}\) with \(\hat{y} \in {1,0}\), care plan \(c\), and assessment \(a\). The model produces a binary classification output, e.i. \(improve = 1\) or \(decline = 0\). We don’t use \(maintain\) records.</p>
+<h3 id="wako-assessments-and-careplans">WAKO assessments and careplans</h3>
+<p>An assessment contains subparts:<br>
+\[a = a_{care~level}^{1} \oplus a_{gender}^{1} \oplus a_{expert}^{79} \oplus a_{doctor}^{94} \oplus a_{diseases}^{596} \oplus c_{services}^{276}\]<br>
 where:</p>
 <ul>
 <li>\(a_{expert}\) contains a vector of 79 health variables provided by experts.</li>
@@ -17,12 +19,16 @@ where:</p>
 <li>\(a_{diseases}\) contains a binary vector indicating the presence of certain diseases categorized by ICD10 standard. Per record, we can have up to 15 diseases. We have represented the information as a global vector \(a_{diseases}\) of 596 dimensions. Each dimension corresponds to a ICD10 disease of our dataset.  Each variable \(v_d \in a_{diseases}^{1,\dots,596}\) represents the presence or absence of the disease \(d\).</li>
 <li>\(c\) contains the care plan services represented as a binary vector  of 276 dimensions, where 276 are all possible services in our dataset. A service is acctivated \(c_{services}^{i}=1\) when appears in the training example.</li>
 </ul>
+<p><strong>WAKO dataset Stats</strong><br>
+Dataset length: 2467 records (after preprocessing)<br>
+Assessment dimension: 769<br>
+Careplan dimension: 276<br>
+Input size: 1045<br>
+Vocabulary size: 2064</p>
 <p>All values part of the input are categorized following the rules mentioned in section <a href="#preprocessing">Preprocessing</a>.</p>
-<h3 id="target-values">Target values</h3>
-<p>The model target is a one-hot vector \(Y = &lt;decline, improve&gt;\), where \(Y = &lt;1,0&gt;\) indicates the record’s careplan declines patient’s care level.</p>
 <h3 id="embedding-layers">Embedding layers</h3>
 <p>Our model maps the assesment vector \(a\) and the careplan vector \(c\) into higher dimensional spaces by means of two embedding functions \(l_a\) and \(l_c\). An embedding function  \(l\) maps an input value \(s \in \mathbb{N}\) into a vector through a lookup table operation \(l(s, W) \in \mathbb{R}^k\). The lookup table \(W \in \mathbb{R}^{k}\times |D|\) is learnt, where \(|D|\) is the length of possible v catealues of \(s\) and \(k\) an hyperparameter. For an input vector such as our assessment \(a\), the embedding \(l_a(a,W_a) \in \mathbb{R}^{|a| \times k}\) fits a latent matrix \(W_a \in \mathbb{R}^{k \times |a|}\), and for the careplan vector representation \(c\), \(l_c(c,W_c) \in \mathbb{R}^{k \times |D|}\) we fit a matrix \(W_a \in \mathbb{R}^{k \times |D|}\).</p>
-<h3 id="encoder-layer">Encoder layer</h3>
+<h3 id="encoder-layers">Encoder layers</h3>
 <p>We encode \(l_a\) and \(l_c\) into same dimensional vectors using affine transformations \(f_a: \mathbb{R}^{k \times |a|} \to \mathbb{R}^{100}\), \(f_c: \mathbb{R}^{k \times |c|} \to \mathbb{R}^{100}\). We apply a non linear (RELU) transformation to the output vector \(f_i\).</p>
 <h3 id="joint-representation">Joint representation</h3>
 <p>Our model guarantees that both assessment and care plan are used for inferring the patient’s health outcome. Otherwise, the model could learn to dismiss the information on the care plan and predicting outcomes using only the assessment information. Such a prediction would be wrong since it would be expressing that the patient can improve with “some” care plan instead of the specific one we are providing as input. The opposite situation is also valid. To generate such a guarantee, we fuse the vector representations corresponding to an assessment \(f_a\) and a care plan \(f_c\) into a feature vector using a bilinear transformation, followed by an affine transform \(\theta\) to obtain the classification output.</p>
@@ -33,20 +39,17 @@ where:</p>
 <ul>
 <li>We considered empty observations (lack of data) variable dependent. Thus, we assigned a token per variable to represents them.</li>
 <li>We considered the cross-modality of the numerical observations –the same observed value have different meaning across variables. To preserve meaning we assign a unique category variable observation.</li>
-<li></li>
 </ul>
 <h2 id="experiments">Experiments</h2>
 <p>We aim at predicting the improvement label of a care plan implementation. We set up the task as a binary classification problem where we build a single algorithm to handle all care levels at once. We gathered the records corresponding to \(improve\) and \(decline\) labels.</p>
 <p>For easing the understanding of sections below, we describe the experiment making reference to both models structure with the term <em>model</em>.</p>
 <h3 id="train--validation">Train / Validation</h3>
-<p>Each record \((a,c)\) is associated with an improvement label \(IL\), where \(a\) is a vector of the assessment variables \(&lt;a_{1},...,a_{769}&gt;\),  \(c\) is a set of services.</p>
+<p>Each record \((a,c)\) is associated with an improvement label, where \(a\) is a vector of the assessment variables \(&lt;a_{1},...,a_{769}&gt;\), \(c\) is a set of services.</p>
 <p>In our dataset, there are 36 pairs that shares the values of expert variables \(a_{1}\dots a_{79}\). All these records (in total 72) were removed from the set before constructing the dataset.</p>
-<p>We performeed two experiments, \(g\) and \(h\) are the models$ are different model, architecture are variations of the model architecture defined in <a href="#method">Method</a>. The difference between \(g\) and \(h\) relies in the input data. The model \(g\) takes all health variables in an assessment as input. Model \(h\) takes only the assessment variables measured by an expert.</p>
-<p>We split the dataset in two sets:</p>
-<ol>
-<li>\(D_{nursing\_care}\): records with \(CL \in \{21,22,23,24,25\}\)</li>
-<li>\(D_{linchpin\_support}\): records with \(CL \in \{12,13\}\)</li>
-</ol>
+<p>The difference between \(g\) and \(g'\) relies in the input data. The model \(g\) takes all the variables in an assessment as input. Model \(g'\) takes only the health assessment variables (ie. does not consider the care level and the gender of the record).</p>
+<p>Dataset input options:<br>
+\(D_{nursing\_care}\) are records within certified with \(\{21,22,23,24,25\}\)<br>
+\(D_{linchpin\_support}\) are records certified with \(\{12,13\}\)</p>
 <p>In Table 1, we depict the number of examples for each experiment arranged by the patient’s outcome.</p>
 <table>
 <thead>
@@ -86,7 +89,7 @@ where:</p>
 <th>Training examples</th>
 <th>Validation examples</th>
 <th>\(g\) Mean Max Accuracy (Std)</th>
-<th>\(h\) Mean Max Accuracy (Std)</th>
+<th>\(g'\) Mean Max Accuracy (Std)</th>
 </tr>
 </thead>
 <tbody>
@@ -96,7 +99,7 @@ where:</p>
 <td>1272</td>
 <td>316</td>
 <td>0.698 (0.015)</td>
-<td>0.677 (0.017)</td>
+<td>0.762 (0.021)</td>
 </tr>
 <tr>
 <td>\(D_{linchpin\_support}\)</td>
@@ -104,19 +107,38 @@ where:</p>
 <td>154</td>
 <td>38</td>
 <td>0.621 (0.049)</td>
-<td>0.608 (0.048)</td>
+<td>0.747 (0.049)</td>
 </tr>
 </tbody>
 </table>
-<p><em>Table 2</em>: Experiments result.</p>
+<p><strong>Table 2</strong>. Training/validation information and results obtained with models \(g\) and \(g'\). Model \(g\) considers only health variables of the assessment as input, while \(g'\) also considers the care level and gender of the record.</p>
 <div>
-    <a href="https://plot.ly/~guido.cs.stanford.edu/5350/?share_key=NZnIkte2jDYpAEgUYrRkym" target="_blank" title="confusion_matrix"><img src="https://plot.ly/~guido.cs.stanford.edu/5350.png?share_key=NZnIkte2jDYpAEgUYrRkym" alt="confusion_matrix" width="600"></a>
+    <a href="https://plot.ly/~guido.cs.stanford.edu/5560/?share_key=Wp5T1BeyHovugAsUxcr0pd" target="_blank" title="confusion_matrix"><img src="https://plot.ly/~guido.cs.stanford.edu/5560.png?share_key=Wp5T1BeyHovugAsUxcr0pd" alt="confusion_matrix" width="600"></a>
     
-</div><p><strong>Figure 1</strong>. We show the confusion matrix of evaluating \(g\) on \(D_{nursing\_care}\) for a single fold.<br>
-source: <a href="https://plot.ly/~guido.cs.stanford.edu/5350/care-levels-21-22-23-24-25-fold-9/">https://plot.ly/~guido.cs.stanford.edu/5350/care-levels-21-22-23-24-25-fold-9/</a></p>
+</div>
+<p><strong>Figure 1</strong>. Confusion matrix of the evaluation of model \(g'\) on a single fold of \(D_{nursiong\_care}\).<br>
+Source:<a href="https://plot.ly/~guido.cs.stanford.edu/5560/care-levels-21-22-23-24-25-fold-0/">https://plot.ly/~guido.cs.stanford.edu/5560/care-levels-21-22-23-24-25-fold-0/</a></p>
+<div>
+    <a href="https://plot.ly/~guido.cs.stanford.edu/5565/?share_key=jlsmCfeGjrJaisxoDbHibW" target="_blank" title="roc"><img src="https://plot.ly/~guido.cs.stanford.edu/5565.png?share_key=jlsmCfeGjrJaisxoDbHibW" alt="roc" width="600"></a>
+    
+</div>
+<p><strong>Figure 2</strong>. ROC curve of model \(g'\) on \(D_{nursiong\_care}\)<br>
+Source: <a href="https://plot.ly/~guido.cs.stanford.edu/5565">https://plot.ly/~guido.cs.stanford.edu/5565</a></p>
+<div>
+    <a href="https://plot.ly/~guido.cs.stanford.edu/5563/?share_key=zuzrTuNZ6rV32i5NsFWAaD" target="_blank" title="confusion_matrix"><img src="https://plot.ly/~guido.cs.stanford.edu/5563.png?share_key=zuzrTuNZ6rV32i5NsFWAaD" alt="confusion_matrix" width="600"></a>
+    
+</div>
+<p><strong>Figure 3</strong>. Confusion matrix of the evaluation of model \(g'\) on a single fold of \(D_{linchpin\_support}\)<br>
+Source: <a href="https://plot.ly/~guido.cs.stanford.edu/5563/care-levels-12-13-fold-0/">https://plot.ly/~guido.cs.stanford.edu/5563/care-levels-12-13-fold-0/</a></p>
+<div>
+    <a href="https://plot.ly/~guido.cs.stanford.edu/5567/?share_key=0o3CYchJKTSuH254Dvc42d" target="_blank" title="roc"><img src="https://plot.ly/~guido.cs.stanford.edu/5567.png?share_key=0o3CYchJKTSuH254Dvc42d" alt="roc" width="600"></a>
+    
+</div>
+<p><strong>Figure 4</strong>. ROC curve of model \(g'\) on \(D_{linchpin\_support}\)<br>
+Source: <a href="https://plot.ly/~guido.cs.stanford.edu/5567/improvement-probability-roc-care-levels-12-13/">https://plot.ly/~guido.cs.stanford.edu/5567/improvement-probability-roc-care-levels-12-13/</a></p>
 <h4 id="paths-to-the-models-binary-files-in-our-server">Paths to the models’ binary files in our server</h4>
 <p>The folds of \(g\) can be found in panda2 at: <br> <em>/workspace/projects/saintcare/src/ai_core/experiments_results/WAKO_RecordImprovementProbability/v0/*</em><br>
-The folds of \(h\) can be found in panda3 at:<br> <em>/workspace/projects/saintcare/src/ai_core/experiments_results/WAKO_RecordImprovementProbability/v1/*</em></p>
+The folds of \(g'\) can be found in panda3 at:<br> <em>/workspace/projects/saintcare/src/ai_core/experiments_results/WAKO_RecordImprovementProbability/v5/*</em></p>
 <h4 id="production-usage">Production Usage</h4>
 <p>Model \(g\) is used in production for estimating the record’s improvement and decline probability of each of the care plans suggested (\(c_{top_1}\), \(c_{top_2}\) and \(c_{fusion}\)) combined with the record’s assessment.<br>
 For production, we trained 10 \(g\) models using different balanced subsets of \(D_{nursing\_care}\) and 10 others using different balanced subsets of \(D_{linchpin\_support}\).<br>
@@ -129,23 +151,30 @@ We defined the target placeholder \(Y_{ph}\) as a matrix of size <em>dx2</em>.</
 <p>The class <strong>RecordImprovementProbability</strong>, provides methods for training our models. This class is used by the notebook <em>run.ipynb</em>.</p>
 <h4 id="how-to-train-your-own-model">How to train your own model?</h4>
 <ol>
-<li>Open notebook <em>/workspace/projects/saintcare/src/WAKO_RecordImprovementProbability/vX/run.ipynb</em> (X in [0,1])</li>
+<li>Open notebook:</li>
+<li><code>/workspace/projects/saintcare/src/WAKO\_RecordImprovementProbability/vX/run.ipynb</code></li>
+<li>X in [0,1,2,3,4,5]</li>
 <li>Configure type of training to do (explained in the notebook).</li>
 <li>Save changes on notebook</li>
 <li>Go to terminal and run:</li>
 </ol>
 <pre class=" language-bash"><code class="prism  language-bash"><span class="token function">cd</span> /workspace/projects/saintcare/src/ai_core/WAKO_RecordImprovementProbability/v0
-
 <span class="token comment" spellcheck="true">#generate .py</span>
 jupyer nbconvert --to python run.ipynb
 
 <span class="token comment" spellcheck="true">#train model Record Improvement Probability v0</span>
 python run.py
 </code></pre>
-<h5 id="source-code">Source Code</h5>
+<h4 id="source-code">Source Code</h4>
 <p>For model \(g\)<br>
 <em>Model estimator</em>: <em>/workspace/projects/saintcare/src/ai_core/WAKO_RecordImprovementProbability/v0/estimator.py</em><br>
 <em>Training and evaluation</em>: <em>/workspace/projects/saintcare/src/ai_core/WAKO_RecordImprovementProbability/v0/run.ipynb</em></p>
-<p>For model \(h\):<br>
-<em>Model estimator</em>: <em>/workspace/projects/saintcare/src/ai_core/WAKO_RecordImprovementProbability/v1/estimator.py</em><br>
-<em>Training and evaluation</em>: <em>/workspace/projects/saintcare/src/ai_core/WAKO_RecordImprovementProbability/v1/run.ipynb</em></p>
+<p>For model \(g'\):<br>
+<em>Model estimator</em>: <em>/workspace/projects/saintcare/src/ai_core/WAKO_RecordImprovementProbability/v5/estimator.py</em><br>
+<em>Training and evaluation</em>: <em>/workspace/projects/saintcare/src/ai_core/WAKO_RecordImprovementProbability/v5/run.ipynb</em></p>
+<p><strong>Saint Care</strong><br>
+Dataset length: 6322 (after removing duplicates)<br>
+Assessment size: 200<br>
+Careplan size: 828<br>
+Input size: 1028<br>
+Vocabulary size: 4121</p>
